@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PĒÑDØ Academy - Dashboard</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f9ff;
+}
+
+header{
+background:#0056b3;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+.container{
+max-width:1000px;
+margin:30px auto;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.15);
+}
+
+button{
+background:#0056b3;
+color:white;
+border:none;
+padding:12px 20px;
+border-radius:5px;
+cursor:pointer;
+font-size:16px;
+margin-top:10px;
+}
+
+button:hover{
+background:#003d80;
+}
+
+.logout{
+background:#dc3545;
+}
+
+.logout:hover{
+background:#b02a37;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+<h1>PĒÑDØ Academy CBT Dashboard</h1>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Welcome Student</h2>
+<p>Select an examination below.</p>
+</div>
+
+<div class="card">
+<h3>CPE 101 - Introduction to Computing</h3>
+<p>40 Questions | 30 Minutes</p>
+<button onclick="startExam()">Start Exam</button>
+</div>
+
+<div class="card">
+<h3>CPE 201 - Programming Fundamentals</h3>
+<p>50 Questions | 45 Minutes</p>
+<button onclick="startExam()">Start Exam</button>
+</div>
+
+<div class="card">
+<h3>CPE 302 - Object Oriented Programming</h3>
+<p>60 Questions | 60 Minutes</p>
+<button onclick="startExam()">Start Exam</button>
+</div>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+<script>
+function startExam(){
+window.location.href="exam.html";
+}
+
+function logout(){
+localStorage.removeItem("pendoUser");
+window.location.href="login.html";
+}
+</script>
+
+</body>
+</html>

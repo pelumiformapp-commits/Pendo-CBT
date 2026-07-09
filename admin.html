@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PĒÑDØ Academy Admin Panel</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f4f9ff;
+margin:0;
+}
+
+header{
+background:#0056b3;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+.container{
+max-width:900px;
+margin:30px auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin:10px 0;
+}
+
+button{
+background:#0056b3;
+color:white;
+padding:12px 20px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#003d80;
+}
+
+.question{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>PĒÑDØ Academy Admin Panel</h1>
+</header>
+
+<div class="container">
+
+<h2>Add New Question</h2>
+
+<input type="text" id="question" placeholder="Question">
+
+<input type="text" id="option1" placeholder="Option A">
+
+<input type="text" id="option2" placeholder="Option B">
+
+<input type="text" id="option3" placeholder="Option C">
+
+<input type="text" id="option4" placeholder="Option D">
+
+<input type="number" id="answer" placeholder="Correct Answer (0-3)">
+
+<button onclick="saveQuestion()">Save Question</button>
+
+<hr>
+
+<h2>Saved Questions</h2>
+
+<div id="list"></div>
+
+</div>
+
+<script>
+
+let questions = JSON.parse(localStorage.getItem("questions")) || [];
+
+function saveQuestion(){
+
+let q = {
+question:document.getElementById("question").value,
+options:[
+document.getElementById("option1").value,
+document.getElementById("option2").value,
+document.getElementById("option3").value,
+document.getElementById("option4").value
+],
+answer:Number(document.getElementById("answer").value)
+};
+
+questions.push(q);
+
+localStorage.setItem("questions",JSON.stringify(questions));
+
+alert("Question Saved");
+
+displayQuestions();
+
+}
+
+function displayQuestions(){
+
+let output="";
+
+questions.forEach((q,i)=>{
+
+output+=`
+<div class="question">
+<b>${i+1}. ${q.question}</b><br>
+A. ${q.options[0]}<br>
+B. ${q.options[1]}<br>
+C. ${q.options[2]}<br>
+D. ${q.options[3]}
+</div>
+`;
+
+});
+
+document.getElementById("list").innerHTML=output;
+
+}
+
+displayQuestions();
+
+</script>
+
+</body>
+  </html>

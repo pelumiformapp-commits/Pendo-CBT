@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PĒÑDØ Academy CBT Exam</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f4f9ff;
+margin:0;
+padding:20px;
+}
+
+.container{
+max-width:800px;
+margin:auto;
+background:#fff;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+margin-bottom:20px;
+font-weight:bold;
+color:#0056b3;
+}
+
+.question{
+font-size:22px;
+margin-bottom:20px;
+}
+
+.option{
+display:block;
+background:#f8f8f8;
+padding:15px;
+margin:10px 0;
+border-radius:8px;
+cursor:pointer;
+}
+
+.option:hover{
+background:#d9ecff;
+}
+
+button{
+background:#0056b3;
+color:#fff;
+padding:12px 20px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-top:20px;
+}
+
+button:hover{
+background:#003d80;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<div class="top">
+<div>Question <span id="current">1</span>/<span id="total">0</span></div>
+
+<div>Time Left: <span id="timer">30:00</span></div>
+</div>
+
+<div class="question" id="question"></div>
+
+<div id="answers"></div>
+
+<button id="nextBtn">Next Question</button>
+
+</div>
+
+<script src="js/questions.js"></script>
+<script src="js/exam.js"></script>
+
+</body>
+  </html>

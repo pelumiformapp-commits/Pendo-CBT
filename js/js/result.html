@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PĒÑDØ Academy - Result</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f4f9ff;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.container{
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.2);
+text-align:center;
+width:350px;
+}
+
+h1{
+color:#0056b3;
+}
+
+button{
+margin-top:20px;
+padding:12px 20px;
+background:#0056b3;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-size:16px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+<h1>Exam Result</h1>
+
+<h2 id="score"></h2>
+<h3 id="percentage"></h3>
+<h2 id="status"></h2>
+
+<button onclick="goHome()">Back to Dashboard</button>
+</div>
+
+<script>
+let score = Number(localStorage.getItem("score"));
+let total = Number(localStorage.getItem("total"));
+
+let percent = Math.round((score/total)*100);
+
+document.getElementById("score").innerHTML =
+"Score: " + score + " / " + total;
+
+document.getElementById("percentage").innerHTML =
+"Percentage: " + percent + "%";
+
+if(percent >= 50){
+document.getElementById("status").innerHTML =
+"✅ PASS";
+document.getElementById("status").style.color = "green";
+}else{
+document.getElementById("status").innerHTML =
+"❌ FAIL";
+document.getElementById("status").style.color = "red";
+}
+
+function goHome(){
+window.location.href="dashboard.html";
+}
+</script>
+
+</body>
+</html>

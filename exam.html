@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy CBT Exam</title>
 
-<link rel="stylesheet" href="css/style.css">
-
 <style>
 body{
 font-family:Arial,sans-serif;
@@ -50,6 +48,11 @@ cursor:pointer;
 background:#d9ecff;
 }
 
+.option.selected {
+background: #b3d7ff;
+border-left: 5px solid #0056b3;
+}
+
 button{
 background:#0056b3;
 color:#fff;
@@ -70,22 +73,146 @@ background:#003d80;
 
 <div class="container">
 
-<div class="top">
-<div>Question <span id="current">1</span>/<span id="total">0</span></div>
+<div id="examArea">
+    <div class="top">
+    <div>Question <span id="current">1</span>/<span id="total">0</span></div>
+    <div>Time Left: <span id="timer">30:00</span></div>
+    </div>
 
-<div>Time Left: <span id="timer">30:00</span></div>
+    <div class="question" id="question"></div>
+    <div id="answers"></div>
+
+    <button id="nextBtn" onclick="nextQuestion()">Next Question</button>
 </div>
 
-<div class="question" id="question"></div>
-
-<div id="answers"></div>
-
-<button id="nextBtn">Next Question</button>
+<!-- Results Area (Hidden Initially) -->
+<div id="resultArea" style="display: none; text-align: center; padding: 20px;">
+    <h2>Examination Completed!</h2>
+    <p style="font-size: 24px; margin: 20px 0;">Your Score: <span id="scoreText" style="font-weight: bold; color: #0056b3;"></span></p>
+    <button onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
+</div>
 
 </div>
 
-<script src="js/questions.js"></script>
-<script src="js/exam.js"></script>
+<script>
+// Mock Question Database split by Course Code
+const database = {
+    "CPE101": [
+        { question: "What does CPU stand for?", options: ["Central Process Unit", "Central Processing Unit", "Computer Personal Unit", "Central Processor Unifier"], answer: 1 },
+        { question: "Which of the following is an operating system?", options: ["Intel", "Windows", "RAM", "Google Chrome"], answer: 1 }
+    ],
+    "CPE201": [
+        { question: "Which data type is used to store text in programming?", options: ["int", "float", "string", "boolean"], answer: 2 },
+        { question: "What is the index of the first element in an array?", options: ["1", "-1", "A", "0"], answer: 3 }
+    ],
+    "CPE302": [
+        { question: "Which concept allows a class to inherit features of another class?", options: ["Polymorphism", "Encapsulation", "Inheritance", "Abstraction"], answer: 2 },
+        { question: "What is a blueprint for creating objects called?", options: ["Method", "Class", "Instance", "Variable"], answer: 1 }
+    ]
+};
+
+// URL Parsing to read active exam course
+const urlParams = new URLSearchParams(window.location.search);
+const currentCourse = urlParams.get('course') || "CPE101"; 
+
+// Active session state tracking
+let examQuestions = database[currentCourse] || database["CPE101"];
+let currentIndex = 0;
+let userAnswers = new Array(examQuestions.length).fill(null);
+let timeRemaining = 30 * 60; // 30 minutes in seconds
+let timerInterval;
+
+function initializeExam() {
+    document.getElementById("total").innerText = examQuestions.length;
+    loadQuestion();
+    startTimer();
+}
+
+function loadQuestion() {
+    document.getElementById("current").innerText = currentIndex + 1;
+    let currentQ = examQuestions[currentIndex];
+    document.getElementById("question").innerText = currentQ.question;
+    
+    let answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
+    
+    currentQ.options.forEach((option, idx) => {
+        let isSelected = userAnswers[currentIndex] === idx;
+        answersDiv.innerHTML += `
+            <div class="option ${isSelected ? 'selected' : ''}" onclick="selectOption(${idx})">
+                ${String.fromCharCode(65 + idx)}. ${option}
+            </div>
+        `;
+    });
+
+    // Change button text dynamically if on the final question
+    if (currentIndex === examQuestions.length - 1) {
+        document.getElementById("nextBtn").innerText = "Submit Exam";
+    } else {
+        document.getElementById("nextBtn").innerText = "Next Question";
+    }
+}
+
+function selectOption(index) {
+    userAnswers[currentIndex] = index;
+    loadQuestion(); // Reload question elements to visually update the select style state
+}
+
+function nextQuestion() {
+    if (userAnswers[currentIndex] === null) {
+        alert("Please select an option before moving forward.");
+        return;
+    }
+
+    if (currentIndex < examQuestions.length - 1) {
+        currentIndex++;
+        loadQuestion();
+    } else {
+        submitExam();
+    }
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        
+        let minutes = Math.floor(timeRemaining / 60);
+        let seconds = timeRemaining % 60;
+        
+        // Pad numbers out to 00 formats
+        let displayMin = minutes < 10 ? "0" + minutes : minutes;
+        let displaySec = seconds < 10 ? "0" + seconds : seconds;
+        
+        document.getElementById("timer").innerText = `${displayMin}:${displaySec}`;
+        
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            alert("Time is up! Your answers are being submitted.");
+            submitExam();
+        }
+    }, 1000);
+}
+
+function submitExam() {
+    clearInterval(timerInterval);
+    
+    let correctCount = 0;
+    examQuestions.forEach((q, i) => {
+        if (userAnswers[i] === q.answer) {
+            correctCount++;
+        }
+    });
+    
+    // Switch container view structures
+    document.getElementById("examArea").style.display = "none";
+    document.getElementById("resultArea").style.display = "block";
+    document.getElementById("scoreText").innerText = `${correctCount} / ${examQuestions.length}`;
+}
+
+// Start everything up on execution
+initializeExam();
+</script>
 
 </body>
   </html>
+  

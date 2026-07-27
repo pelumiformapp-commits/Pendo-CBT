@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PĒÑDØ Academy - Admin Gradebook</title>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+body{ background:#f4f9ff; }
+header{ background:#0056b3; color:white; padding:20px; text-align:center; }
+.container{ max-width:1100px; margin:30px auto; padding:20px; }
+.card{ background:white; padding:20px; margin-bottom:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.15); }
+.nav-buttons { display: flex; gap: 15px; margin-bottom: 20px; }
+button { background:#0056b3; color:white; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-size:15px; font-weight: bold; }
+button:hover { background:#003d80; }
+.danger-btn { background: #dc3545; }
+.danger-btn:hover { background: #b02a37; }
+.secondary-btn { background: #6c757d; }
+.secondary-btn:hover { background: #5a6268; }
+.grade-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+.grade-table th, .grade-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+.grade-table th { background-color: #0056b3; color: white; }
+.grade-table tr:hover { background-color: #f1f7ff; }
+.no-records { color: #666; font-style: italic; text-align: center; padding: 20px 0; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>PĒÑDØ Academy - Global Gradebook Panel</h1>
+</header>
+
+<div class="container">
+
+    <div class="nav-buttons">
+        <button class="secondary-btn" onclick="window.location.href='admin.html'">← Back to Question Creator</button>
+        <button class="danger-btn" onclick="clearAllScores()">Wipe Gradebook Logs</button>
+        <button style="margin-left: auto;" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card">
+        <h2>All Student Examination Submissions</h2>
+        <div id="gradebookContainer"></div>
+    </div>
+
+</div>
+
+<script>
+// Verify Admin Session Authorization Security Guard
+const userSession = JSON.parse(localStorage.getItem("pendoUser"));
+if (!userSession || userSession.role !== "admin") {
+    alert("Access Denied: Administrative privileges required.");
+    window.location.href = "login.html";
+}
+
+function loadAllScores() {
+    const container = document.getElementById("gradebookContainer");
+    const allScores = JSON.parse(localStorage.getItem("pendo_scores")) || [];
+
+    if (allScores.length === 0) {
+        container.innerHTML = `<p class="no-records">No students have taken or completed examinations yet.</p>`;
+        return;
+    }
+
+    let htmlTable = `
+        <table class="grade-table">
+            <thead>
+                <tr>
+                    <th>Date Taken</th>
+                    <th>Student Name</th>
+                    <th>Email Address</th>
+                    <th>Course Code</th>
+                    <th>Score Earned</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    // Render items chronologically descending (newest submissions first)
+    allScores.reverse().forEach(record => {
+        htmlTable += `
+            <tr>
+                <td>${record.date}</td>
+                <td><strong>${record.studentName}</strong></td>
+                <td>${record.studentEmail}</td>
+                <td><span style="background: #e2efff; padding: 4px 8px; border-radius: 4px; font-weight: bold; color: #0056b3;">${record.courseCode}</span></td>
+                <td style="color: #28a745; font-weight: bold; font-size: 16px;">${record.score}</td>
+            </tr>
+        `;
+    });
+
+    htmlTable += `</tbody></table>`;
+    container.innerHTML = htmlTable;
+}
+
+function clearAllScores() {
+    if (confirm("Are you absolute certain you want to wipe ALL students score records out? This cannot be undone.")) {
+        localStorage.removeItem("pendo_scores");
+        alert("Gradebook records cleared successfully.");
+        loadAllScores(); // Force interface visual redraw
+    }
+}
+
+function logout() {
+    localStorage.removeItem("pendoUser");
+    window.location.href = "login.html";
+}
+
+// Kickstart script execution pipeline on layout attachment
+loadAllScores();
+</script>
+</body>
+</html>
+

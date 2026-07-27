@@ -72,26 +72,26 @@ background:#b02a37;
 <div class="container">
 
 <div class="card">
-<h2>Welcome Student</h2>
+<h2 id="welcomeText">Welcome Student</h2>
 <p>Select an examination below.</p>
 </div>
 
 <div class="card">
 <h3>CPE 101 - Introduction to Computing</h3>
 <p>40 Questions | 30 Minutes</p>
-<button onclick="startExam()">Start Exam</button>
+<button onclick="startExam('CPE101')">Start Exam</button>
 </div>
 
 <div class="card">
 <h3>CPE 201 - Programming Fundamentals</h3>
 <p>50 Questions | 45 Minutes</p>
-<button onclick="startExam()">Start Exam</button>
+<button onclick="startExam('CPE201')">Start Exam</button>
 </div>
 
 <div class="card">
 <h3>CPE 302 - Object Oriented Programming</h3>
 <p>60 Questions | 60 Minutes</p>
-<button onclick="startExam()">Start Exam</button>
+<button onclick="startExam('CPE302')">Start Exam</button>
 </div>
 
 <button class="logout" onclick="logout()">Logout</button>
@@ -99,13 +99,24 @@ background:#b02a37;
 </div>
 
 <script>
-function startExam(){
-window.location.href="exam.html";
+// Check if user is logged in
+const userSession = JSON.parse(localStorage.getItem("pendoUser"));
+
+if (!userSession) {
+    window.location.href = "login.html";
+} else {
+    // Dynamically set student name if available in user object
+    document.getElementById("welcomeText").innerText = `Welcome, ${userSession.name || 'Student'}`;
+}
+
+function startExam(courseCode){
+    // Redirect to the exam page while passing the specific course code
+    window.location.href = `exam.html?course=${courseCode}`;
 }
 
 function logout(){
-localStorage.removeItem("pendoUser");
-window.location.href="login.html";
+    localStorage.removeItem("pendoUser");
+    window.location.href = "login.html";
 }
 </script>
 

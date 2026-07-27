@@ -78,52 +78,64 @@ a{
 <h3 style="text-align:center;margin-bottom:15px;">Student Registration</h3>
 
 <form id="registerForm">
-
-<input type="text" id="fullname" placeholder="Full Name" required>
-
-<input type="email" id="email" placeholder="Email Address" required>
-
-<input type="password" id="password" placeholder="Password" required>
-
-<input type="password" id="confirmPassword" placeholder="Confirm Password" required>
-
-<button type="submit">Create Account</button>
-
+    <input type="text" id="fullname" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email Address" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+    <button type="submit">Create Account</button>
 </form>
 
-<p>Already have an account?
-<a href="login.html">Login</a>
+<p>Already have an account? 
+    <a href="login.html">Login</a>
 </p>
 
 </div>
 
 <script>
-document.getElementById("registerForm").addEventListener("submit",function(e){
+document.getElementById("registerForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
-    let fullname = document.getElementById("fullname").value;
-    let email = document.getElementById("email").value;
+    let fullname = document.getElementById("fullname").value.trim();
+    let email = document.getElementById("email").value.trim().toLowerCase();
     let password = document.getElementById("password").value;
     let confirmPassword = document.getElementById("confirmPassword").value;
 
+    // 1. Password Matching Validation
     if(password !== confirmPassword){
         alert("Passwords do not match.");
         return;
     }
 
-    let user = {
-        fullname: fullname,
+    // 2. Fetch Existing Global Users Array
+    let registeredUsers = JSON.parse(localStorage.getItem("pendoUsers")) || [];
+
+    // 3. Prevent Admin Email or Duplicate Student Email Theft
+    if (email === "admin@pendo.com") {
+        alert("This email address is reserved for administrative use.");
+        return;
+    }
+
+    let emailExists = registeredUsers.some(user => user.email === email);
+    if (emailExists) {
+        alert("An account with this email address already exists.");
+        return;
+    }
+
+    // 4. Create New Account Structure (Keyed as 'name' to align with login script)
+    let newUser = {
+        name: fullname,
         email: email,
         password: password
     };
 
-    localStorage.setItem("pendoUser", JSON.stringify(user));
+    // 5. Append and Save to localStorage
+    registeredUsers.push(newUser);
+    localStorage.setItem("pendoUsers", JSON.stringify(registeredUsers));
 
-    alert("Registration Successful!");
-
-    window.location.href="login.html";
+    alert("Registration Successful! You can now log in.");
+    window.location.href = "login.html";
 });
 </script>
 
 </body>
-  </html>
+</html>

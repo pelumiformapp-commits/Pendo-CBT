@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy - Exam Creator</title>
-
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0056b3">
-
 <style>
 body{ font-family:Arial,sans-serif; background:#f4f9ff; margin:0; }
 header{ background:#0056b3; color:white; padding:20px; text-align:center; }
@@ -27,6 +25,7 @@ button:hover{ background:#003d80; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 .help-box { background: #e7f3ff; padding: 15px; border-left: 4px solid #0056b3; margin-bottom: 15px; font-size: 14px; }
+.subject-tag { background: #0056b3; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -45,6 +44,7 @@ button:hover{ background:#003d80; }
 <!-- TAB 1: SINGLE QUESTION -->
 <div id="single" class="tab-content active">
 <h2 id="formTitle">Create New Question</h2>
+<input type="text" id="subject" placeholder="Subject: e.g JAMB Mathematics, WAEC English, POST-UTME Physics">
 <input type="text" id="question" placeholder="Type your question here...">
 <input type="text" id="option1" placeholder="Option A">
 <input type="text" id="option2" placeholder="Option B">
@@ -65,16 +65,16 @@ button:hover{ background:#003d80; }
 
 <!-- TAB 2: BULK IMPORT -->
 <div id="bulk" class="tab-content">
-<h2>Bulk Import Questions</h2>
+<h2>Bulk Import Questions - JAMB/UTME/WAEC Format</h2>
 <div class="help-box">
 <b>Format:</b><br>
+Subject: JAMB Mathematics<br>
 Q1. Your question here?<br>
 1. Option A<br>
 2. Option B<br>
 3. Option C<br>
 4. Option D<br>
 *3 &lt;-- Correct answer number<br>
-**Explanation optional<br>
 &lt;-- 2 line breaks between questions
 </div>
 <textarea id="bulkInput" rows="15" placeholder="Paste all your questions here..."></textarea>
@@ -115,6 +115,7 @@ function showTab(tab) {
 }
 
 function saveQuestion(){
+    let subject = document.getElementById("subject").value.trim();
     let qText = document.getElementById("question").value.trim();
     let opt1 = document.getElementById("option1").value.trim();
     let opt2 = document.getElementById("option2").value.trim();
@@ -122,9 +123,9 @@ function saveQuestion(){
     let opt4 = document.getElementById("option4").value.trim();
     let ansVal = Number(document.getElementById("answer").value);
 
-    if(!qText ||!opt1 ||!opt2 ||!opt3 ||!opt4) { alert("Please fill all fields."); return; }
+    if(!subject ||!qText ||!opt1 ||!opt2 ||!opt3 ||!opt4) { alert("Please fill Subject and all fields."); return; }
 
-    let questionData = { question: qText, options: [opt1, opt2, opt3, opt4], answer: ansVal };
+    let questionData = { subject, question: qText, options: [opt1, opt2, opt3, opt4], answer: ansVal };
     if (editMode) { database[editIndex] = questionData; alert("Updated!"); cancelEdit(); }
     else { database.push(questionData); alert("Question added!"); }
     localStorage.setItem("pendo_global_exam", JSON.stringify(database));
@@ -135,12 +136,16 @@ function importBulk() {
     let text = document.getElementById("bulkInput").value.trim();
     if(!text) { alert("Paste questions first"); return; }
 
-    let blocks = text.split(/\n\s*\n\s*\n/); // split by 2 line breaks
+    let blocks = text.split(/\n\s*\n\s*\n/);
     let imported = 0;
+    let currentSubject = "General";
 
     blocks.forEach(block => {
         let lines = block.split('\n').map(l => l.trim()).filter(l => l);
         if(lines.length < 6) return;
+
+        let subjectLine = lines.find(l => l.toLowerCase().startsWith('subject:'));
+        if(subjectLine) currentSubject = subjectLine.replace(/subject:/i, '').trim();
 
         let qLine = lines.find(l => l.startsWith('Q') || l.match(/^\d+\./));
         let options = lines.filter(l => l.match(/^\d+\./));
@@ -149,9 +154,9 @@ function importBulk() {
         if(qLine && options.length >= 4 && answerLine) {
             let question = qLine.replace(/^Q\d+\.\s*/, '').replace(/^\d+\.\s*/, '');
             let opts = options.map(o => o.replace(/^\d+\.\s*/, ''));
-            let ans = Number(answerLine.replace('*', '').trim()) - 1; // convert 1-4 to 0-3
+            let ans = Number(answerLine.replace('*', '').trim()) - 1;
 
-            database.push({ question, options: opts, answer: ans });
+            database.push({ subject: currentSubject, question, options: opts, answer: ans });
             imported++;
         }
     });
@@ -162,10 +167,30 @@ function importBulk() {
     displayQuestions();
 }
 
-function editQuestion(index) { /* same as before */ }
-function cancelEdit() { /* same as before */ }
+function editQuestion(index) {
+    editMode = true; editIndex = index;
+    let q = database[index];
+    document.getElementById("subject").value = q.subject;
+    document.getElementById("question").value = q.question;
+    document.getElementById("option1").value = q.options[0];
+    document.getElementById("option2").value = q.options[1];
+    document.getElementById("option3").value = q.options[2];
+    document.getElementById("option4").value = q.options[3];
+    document.getElementById("answer").value = q.answer;
+    document.getElementById("formTitle").innerText = "Edit Question";
+    document.getElementById("submitBtn").innerText = "Update Question";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    showTab('single');
+}
+function cancelEdit() {
+    editMode = false; editIndex = null;
+    document.getElementById("formTitle").innerText = "Create New Question";
+    document.getElementById("submitBtn").innerText = "Save Question to Exam Pool";
+    document.getElementById("cancelEditBtn").style.display = "none";
+    clearForm();
+}
 function deleteQuestion(index) { database.splice(index, 1); localStorage.setItem("pendo_global_exam", JSON.stringify(database)); displayQuestions(); }
-function clearForm() { document.getElementById("question").value = ""; document.getElementById("option1").value = ""; document.getElementById("option2").value = ""; document.getElementById("option3").value = ""; document.getElementById("option4").value = ""; document.getElementById("answer").value = "0"; }
+function clearForm() { document.getElementById("subject").value = ""; document.getElementById("question").value = ""; document.getElementById("option1").value = ""; document.getElementById("option2").value = ""; document.getElementById("option3").value = ""; document.getElementById("option4").value = ""; document.getElementById("answer").value = "0"; }
 
 function displayQuestions(){
     document.getElementById("count").innerText = database.length;
@@ -174,7 +199,7 @@ function displayQuestions(){
         output = "<p style='color:gray;'>Your exam is empty. Use Bulk Import above to add many at once.</p>";
     } else {
         database.forEach((q, i) => {
-            output += `<div class="question"><b>Q${i+1}: ${q.question}</b><br>A. ${q.options[0]} ${q.answer === 0? '✔️' : ''}<br>B. ${q.options[1]} ${q.answer === 1? '✔️' : ''}<br>C. ${q.options[2]} ${q.answer === 2? '✔️' : ''}<br>D. ${q.options[3]} ${q.answer === 3? '✔️' : ''}
+            output += `<div class="question"><span class="subject-tag">${q.subject}</span><br><b>Q${i+1}: ${q.question}</b><br>A. ${q.options[0]} ${q.answer === 0? '✔️' : ''}<br>B. ${q.options[1]} ${q.answer === 1? '✔️' : ''}<br>C. ${q.options[2]} ${q.answer === 2? '✔️' : ''}<br>D. ${q.options[3]} ${q.answer === 3? '✔️' : ''}
             <div class="action-buttons"><button class="warning-btn" onclick="editQuestion(${i})">Edit</button><button class="danger-btn" onclick="deleteQuestion(${i})">Delete</button></div></div>`;
         });
     }
@@ -185,4 +210,4 @@ function logout() { localStorage.removeItem("pendoUser"); window.location.href =
 displayQuestions();
 </script>
 </body>
-  </html>
+                                                                                                         </html>

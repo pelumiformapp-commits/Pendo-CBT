@@ -42,6 +42,8 @@ padding:15px;
 margin:10px 0;
 border-radius:8px;
 cursor:pointer;
+border: 1px solid #eee;
+transition: all 0.2s ease;
 }
 
 .option:hover{
@@ -51,6 +53,13 @@ background:#d9ecff;
 .option.selected {
 background: #b3d7ff;
 border-left: 5px solid #0056b3;
+font-weight: bold;
+}
+
+.button-group {
+display: flex;
+gap: 15px;
+margin-top: 20px;
 }
 
 button{
@@ -60,11 +69,25 @@ padding:12px 20px;
 border:none;
 border-radius:5px;
 cursor:pointer;
-margin-top:20px;
+font-weight: bold;
+flex: 1;
 }
 
 button:hover{
 background:#003d80;
+}
+
+button:disabled {
+background: #cccccc;
+cursor: not-allowed;
+}
+
+#prevBtn {
+background: #6c757d;
+}
+
+#prevBtn:hover:not(:disabled) {
+background: #5a6268;
 }
 </style>
 
@@ -73,53 +96,66 @@ background:#003d80;
 
 <div class="container">
 
+<!-- Active Exam Area -->
 <div id="examArea">
     <div class="top">
-    <div>Question <span id="current">1</span>/<span id="total">0</span></div>
-    <div>Time Left: <span id="timer">30:00</span></div>
+        <div>Question <span id="current">1</span>/<span id="total">0</span></div>
+        <div>Time Left: <span id="timer">30:00</span></div>
     </div>
 
-    <div class="question" id="question"></div>
+    <div class="question" id="question">Loading question...</div>
     <div id="answers"></div>
 
-    <button id="nextBtn" onclick="nextQuestion()">Next Question</button>
+    <div class="button-group">
+        <button id="prevBtn" onclick="prevQuestion()" disabled>Previous</button>
+        <button id="nextBtn" onclick="nextQuestion()">Next Question</button>
+    </div>
 </div>
 
 <!-- Results Area (Hidden Initially) -->
 <div id="resultArea" style="display: none; text-align: center; padding: 20px;">
     <h2>Examination Completed!</h2>
     <p style="font-size: 24px; margin: 20px 0;">Your Score: <span id="scoreText" style="font-weight: bold; color: #0056b3;"></span></p>
-    <button onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
+    <button onclick="window.location.href='dashboard.html'" style="max-width: 250px; margin: 0 auto; display: block;">Return to Dashboard</button>
 </div>
 
 </div>
 
 <script>
-// Mock Question Database split by Course Code
-const database = {
+// 1. Fallback default questions if the Admin Database is completely empty
+const defaultFallbackDatabase = {
     "CPE101": [
-        { question: "What does CPU stand for?", options: ["Central Process Unit", "Central Processing Unit", "Computer Personal Unit", "Central Processor Unifier"], answer: 1 },
-        { question: "Which of the following is an operating system?", options: ["Intel", "Windows", "RAM", "Google Chrome"], answer: 1 }
+        { question: "What does CPU stand for?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Computer Processing Unit"], answer: 0 },
+        { question: "HTML stands for?", options: ["Hyper Text Markup Language", "High Transfer Machine Language", "Hyperlink Text Machine Language", "Home Tool Markup Language"], answer: 0 }
     ],
     "CPE201": [
-        { question: "Which data type is used to store text in programming?", options: ["int", "float", "string", "boolean"], answer: 2 },
-        { question: "What is the index of the first element in an array?", options: ["1", "-1", "A", "0"], answer: 3 }
+        { question: "Which language is used to style web pages?", options: ["Python", "CSS", "Java", "C++"], answer: 1 },
+        { question: "Which symbol is used for comments in JavaScript?", options: ["//", "<!-- -->", "##", "**"], answer: 0 }
     ],
     "CPE302": [
-        { question: "Which concept allows a class to inherit features of another class?", options: ["Polymorphism", "Encapsulation", "Inheritance", "Abstraction"], answer: 2 },
-        { question: "What is a blueprint for creating objects called?", options: ["Method", "Class", "Instance", "Variable"], answer: 1 }
+        { question: "Which company developed JavaScript?", options: ["Microsoft", "Netscape", "Google", "Apple"], answer: 1 }
     ]
 };
 
-// URL Parsing to read active exam course
+// 2. Fetch the dynamic question pool managed by the Admin Panel
+const adminDatabase = JSON.parse(localStorage.getItem("pendo_quiz_db")) || {};
+
+// 3. Parse URL parameter to check which course was clicked
 const urlParams = new URLSearchParams(window.location.search);
 const currentCourse = urlParams.get('course') || "CPE101"; 
 
-// Active session state tracking
-let examQuestions = database[currentCourse] || database["CPE101"];
+// 4. Load questions
+let examQuestions = [];
+if (adminDatabase[currentCourse] && adminDatabase[currentCourse].length > 0) {
+    examQuestions = adminDatabase[currentCourse];
+} else {
+    examQuestions = defaultFallbackDatabase[currentCourse] || defaultFallbackDatabase["CPE101"];
+}
+
+// 5. State tracking
 let currentIndex = 0;
 let userAnswers = new Array(examQuestions.length).fill(null);
-let timeRemaining = 30 * 60; // 30 minutes in seconds
+let timeRemaining = 30 * 60; // 30 minutes
 let timerInterval;
 
 function initializeExam() {
@@ -145,7 +181,9 @@ function loadQuestion() {
         `;
     });
 
-    // Change button text dynamically if on the final question
+    // Control navigation buttons state
+    document.getElementById("prevBtn").disabled = (currentIndex === 0);
+
     if (currentIndex === examQuestions.length - 1) {
         document.getElementById("nextBtn").innerText = "Submit Exam";
     } else {
@@ -155,12 +193,12 @@ function loadQuestion() {
 
 function selectOption(index) {
     userAnswers[currentIndex] = index;
-    loadQuestion(); // Reload question elements to visually update the select style state
+    loadQuestion();
 }
 
 function nextQuestion() {
     if (userAnswers[currentIndex] === null) {
-        alert("Please select an option before moving forward.");
+        alert("Please select an answer choice before moving forward.");
         return;
     }
 
@@ -172,6 +210,13 @@ function nextQuestion() {
     }
 }
 
+function prevQuestion() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        loadQuestion();
+    }
+}
+
 function startTimer() {
     timerInterval = setInterval(() => {
         timeRemaining--;
@@ -179,7 +224,6 @@ function startTimer() {
         let minutes = Math.floor(timeRemaining / 60);
         let seconds = timeRemaining % 60;
         
-        // Pad numbers out to 00 formats
         let displayMin = minutes < 10 ? "0" + minutes : minutes;
         let displaySec = seconds < 10 ? "0" + seconds : seconds;
         
@@ -187,7 +231,7 @@ function startTimer() {
         
         if (timeRemaining <= 0) {
             clearInterval(timerInterval);
-            alert("Time is up! Your answers are being submitted.");
+            alert("Your examination time limit is up! Processing auto-submission...");
             submitExam();
         }
     }, 1000);
@@ -203,16 +247,31 @@ function submitExam() {
         }
     });
     
-    // Switch container view structures
+    // Save Score History to localStorage
+    const activeUser = JSON.parse(localStorage.getItem("pendoUser"));
+    if (activeUser && activeUser.email) {
+        let scoreHistory = JSON.parse(localStorage.getItem("pendo_scores")) || [];
+        
+        let newRecord = {
+            studentEmail: activeUser.email,
+            studentName: activeUser.name,
+            courseCode: currentCourse,
+            score: `${correctCount} / ${examQuestions.length}`,
+            date: new Date().toLocaleDateString()
+        };
+        
+        scoreHistory.push(newRecord);
+        localStorage.setItem("pendo_scores", JSON.stringify(scoreHistory));
+    }
+    
+    // Toggle layouts
     document.getElementById("examArea").style.display = "none";
     document.getElementById("resultArea").style.display = "block";
-    document.getElementById("scoreText").innerText = `${correctCount} / ${examQuestions.length}`;
+    document.getElementById("scoreText").innerText = `${correctCount} out of ${examQuestions.length}`;
 }
 
-// Start everything up on execution
 initializeExam();
 </script>
 
 </body>
-  </html>
-  
+</html>

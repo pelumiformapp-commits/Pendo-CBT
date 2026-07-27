@@ -9,9 +9,17 @@ body{ font-family:Arial,sans-serif; background:#f4f9ff; margin:0; }
 header{ background:#0056b3; color:white; padding:20px; text-align:center; }
 .container{ max-width:900px; margin:30px auto; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.2); }
 input, select{ width:100%; padding:10px; margin:10px 0; box-sizing: border-box; }
-button{ background:#0056b3; color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; width: 100%; font-weight: bold; }
+button{ background:#0056b3; color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
 button:hover{ background:#003d80; }
-.question{ padding:15px; border-bottom:1px solid #ddd; background: #f9f9f9; margin-bottom: 10px; border-left: 5px solid #0056b3; }
+.question{ padding:15px; border-bottom:1px solid #ddd; background: #f9f9f9; margin-bottom: 10px; border-left: 5px solid #0056b3; position: relative; }
+.action-buttons { margin-top: 10px; display: flex; gap: 10px; }
+.action-buttons button { width: auto; padding: 6px 12px; font-size: 13px; margin-bottom: 0; }
+.danger-btn { background: #dc3545; }
+.danger-btn:hover { background: #b02a37; }
+.success-btn { background: #28a745; }
+.success-btn:hover { background: #218838; }
+.warning-btn { background: #ffc107; color: #000; }
+.warning-btn:hover { background: #e0a800; }
 </style>
 </head>
 <body>
@@ -21,7 +29,7 @@ button:hover{ background:#003d80; }
 </header>
 
 <div class="container">
-<h2>Add New Question</h2>
+<h2 id="formTitle">Add New Question</h2>
 
 <label><strong>Select Course:</strong></label>
 <select id="courseCode">
@@ -44,18 +52,33 @@ button:hover{ background:#003d80; }
   <option value="3">Option D</option>
 </select>
 
-<button onclick="saveQuestion()">Save Question</button>
+<button id="submitBtn" onclick="saveQuestion()">Save Question</button>
+<button id="cancelEditBtn" class="danger-btn" onclick="cancelEdit()" style="display: none;">Cancel Edit</button>
 
 <hr style="margin: 30px 0;">
 <h2>All Saved Questions</h2>
 <div id="list"></div>
 <br>
-<button onclick="window.location.href='login.html'" style="background: #dc3545;">Logout to Login Screen</button>
+
+<button class="success-btn" onclick="window.location.href='admin_scores.html'">View Global Student Scores & Gradebook</button>
+<button class="danger-btn" onclick="logout()">Logout to Login Screen</button>
 </div>
 
 <script>
-// Fetch or initialize our course-grouped database structure
+// 1. Verify Admin Session Authorization Gate
+const userSession = JSON.parse(localStorage.getItem("pendoUser"));
+if (!userSession || userSession.role !== "admin") {
+    alert("Access Denied: Administrative privileges required.");
+    window.location.href = "login.html";
+}
+
+// 2. Fetch or initialize our course-grouped database structure
 let database = JSON.parse(localStorage.getItem("pendo_quiz_db")) || { "CPE101": [], "CPE201": [], "CPE302": [] };
+
+// Track if we are currently editing a question
+let editMode = false;
+let editCourse = "";
+let editIndex = null;
 
 function saveQuestion(){
     let course = document.getElementById("courseCode").value;
@@ -71,25 +94,88 @@ function saveQuestion(){
         return;
     }
 
-    let newQ = {
+    let questionData = {
         question: qText,
         options: [opt1, opt2, opt3, opt4],
         answer: ansVal
     };
 
-    // Push into the specific course chosen
-    database[course].push(newQ);
-    localStorage.setItem("pendo_quiz_db", JSON.stringify(database));
-    alert("Question saved to " + course);
+    if (editMode) {
+        // Remove from old course if course was changed during edit
+        if (editCourse !== course) {
+            database[editCourse].splice(editIndex, 1);
+            database[course].push(questionData);
+        } else {
+            // Update inline
+            database[course][editIndex] = questionData;
+        }
+        alert("Question updated successfully!");
+        cancelEdit();
+    } else {
+        // Fresh creation mode
+        database[course].push(questionData);
+        alert("Question saved to " + course);
+    }
 
-    // Reset inputs
+    localStorage.setItem("pendo_quiz_db", JSON.stringify(database));
+    clearForm();
+    displayQuestions();
+}
+
+function editQuestion(course, index) {
+    editMode = true;
+    editCourse = course;
+    editIndex = index;
+
+    let targetQ = database[course][index];
+
+    // Populate Form Inputs
+    document.getElementById("courseCode").value = course;
+    document.getElementById("question").value = targetQ.question;
+    document.getElementById("option1").value = targetQ.options[0];
+    document.getElementById("option2").value = targetQ.options[1];
+    document.getElementById("option3").value = targetQ.options[2];
+    document.getElementById("option4").value = targetQ.options[3];
+    document.getElementById("answer").value = targetQ.answer;
+
+    // Adjust Buttons layout
+    document.getElementById("formTitle").innerText = "Edit Question";
+    document.getElementById("submitBtn").innerText = "Update Question";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    
+    // Smooth scroll up to form view container area
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+    editMode = false;
+    editCourse = "";
+    editIndex = null;
+    
+    document.getElementById("formTitle").innerText = "Add New Question";
+    document.getElementById("submitBtn").innerText = "Save Question";
+    document.getElementById("cancelEditBtn").style.display = "none";
+    clearForm();
+}
+
+function deleteQuestion(course, index) {
+    if (confirm("Are you sure you want to delete this question? This step cannot be reversed.")) {
+        database[course].splice(index, 1);
+        localStorage.setItem("pendo_quiz_db", JSON.stringify(database));
+        if (editMode && editCourse === course && editIndex === index) {
+            cancelEdit();
+        }
+        displayQuestions();
+    }
+}
+
+function clearForm() {
     document.getElementById("question").value = "";
     document.getElementById("option1").value = "";
     document.getElementById("option2").value = "";
     document.getElementById("option3").value = "";
     document.getElementById("option4").value = "";
-
-    displayQuestions();
+    document.getElementById("answer").value = "0";
 }
 
 function displayQuestions(){
@@ -97,7 +183,7 @@ function displayQuestions(){
     let courses = ["CPE101", "CPE201", "CPE302"];
     
     courses.forEach(c => {
-        output += `<h3>${c} Questions</h3>`;
+        output += `<h3 style="margin-top:20px; color:#0056b3;">${c} Questions</h3>`;
         if(!database[c] || database[c].length === 0) {
             output += "<p style='color:gray;'>No questions added yet.</p>";
         } else {
@@ -109,6 +195,11 @@ function displayQuestions(){
                     B. ${q.options[1]} ${q.answer === 1 ? '✔️' : ''}<br>
                     C. ${q.options[2]} ${q.answer === 2 ? '✔️' : ''}<br>
                     D. ${q.options[3]} ${q.answer === 3 ? '✔️' : ''}
+                    
+                    <div class="action-buttons">
+                        <button class="warning-btn" onclick="editQuestion('${c}', ${i})">Edit</button>
+                        <button class="danger-btn" onclick="deleteQuestion('${c}', ${i})">Delete</button>
+                    </div>
                 </div>`;
             });
         }
@@ -116,6 +207,12 @@ function displayQuestions(){
     document.getElementById("list").innerHTML = output;
 }
 
+function logout() {
+    localStorage.removeItem("pendoUser");
+    window.location.href = "login.html";
+}
+
+// Initial execution render routine pass
 displayQuestions();
 </script>
 </body>

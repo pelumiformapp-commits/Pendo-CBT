@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy - Exam Creator</title>
+
+<!-- PWA CODE START -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0056b3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PENDO Admin">
+<!-- PWA CODE END -->
+
 <style>
 body{ font-family:Arial,sans-serif; background:#f4f9ff; margin:0; }
 header{ background:#0056b3; color:white; padding:20px; text-align:center; }
@@ -58,8 +67,16 @@ button:hover{ background:#003d80; }
 </div>
 
 <script>
+// PWA REGISTER CODE
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+
+// YOUR EXISTING JS CODE
 const userSession = JSON.parse(localStorage.getItem("pendoUser"));
-if (!userSession || userSession.role !== "admin") {
+if (!userSession || userSession.role!== "admin") {
     alert("Access Denied: Administrative privileges required.");
     window.location.href = "login.html";
 }
@@ -77,7 +94,7 @@ function saveQuestion(){
     let opt4 = document.getElementById("option4").value.trim();
     let ansVal = Number(document.getElementById("answer").value);
 
-    if(!qText || !opt1 || !opt2 || !opt3 || !opt4) {
+    if(!qText ||!opt1 ||!opt2 ||!opt3 ||!opt4) {
         alert("Please fill in all text fields.");
         return;
     }
@@ -118,7 +135,7 @@ function editQuestion(index) {
     document.getElementById("formTitle").innerText = "Edit Question";
     document.getElementById("submitBtn").innerText = "Update Question";
     document.getElementById("cancelEditBtn").style.display = "block";
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -158,11 +175,11 @@ function displayQuestions(){
             output += `
             <div class="question">
                 <b>Question ${i+1}: ${q.question}</b><br>
-                A. ${q.options[0]} ${q.answer === 0 ? '✔️' : ''}<br>
-                B. ${q.options[1]} ${q.answer === 1 ? '✔️' : ''}<br>
-                C. ${q.options[2]} ${q.answer === 2 ? '✔️' : ''}<br>
-                D. ${q.options[3]} ${q.answer === 3 ? '✔️' : ''}
-                
+                A. ${q.options[0]} ${q.answer === 0? '✔️' : ''}<br>
+                B. ${q.options[1]} ${q.answer === 1? '✔️' : ''}<br>
+                C. ${q.options[2]} ${q.answer === 2? '✔️' : ''}<br>
+                D. ${q.options[3]} ${q.answer === 3? '✔️' : ''}
+
                 <div class="action-buttons">
                     <button class="warning-btn" onclick="editQuestion(${i})">Edit</button>
                     <button class="danger-btn" onclick="deleteQuestion(${i})">Delete</button>
@@ -181,5 +198,4 @@ function logout() {
 displayQuestions();
 </script>
 </body>
-  </html>
-  
+</html>

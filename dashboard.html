@@ -5,95 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy - Dashboard</title>
 
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0056b3">
+
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
-
-body{
-background:#f4f9ff;
-}
-
-header{
-background:#0056b3;
-color:white;
-padding:20px;
-text-align:center;
-}
-
-.container{
-max-width:1000px;
-margin:30px auto;
-padding:20px;
-}
-
-.card{
-background:white;
-padding:20px;
-margin-bottom:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,.15);
-}
-
-button{
-background:#0056b3;
-color:white;
-border:none;
-padding:12px 20px;
-border-radius:5px;
-cursor:pointer;
-font-size:16px;
-margin-top:10px;
-font-weight: bold;
-}
-
-button:hover{
-background:#003d80;
-}
-
-.logout{
-background:#dc3545;
-display: block;
-width: 100%;
-max-width: 200px;
-margin: 20px 0;
-text-align: center;
-}
-
-.logout:hover{
-background:#b02a37;
-}
-
-/* History log styling rules */
-.history-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 15px;
-}
-
-.history-table th, .history-table td {
-padding: 12px;
-text-align: left;
-border-bottom: 1px solid #ddd;
-}
-
-.history-table th {
-background-color: #0056b3;
-color: white;
-}
-
-.history-table tr:hover {
-background-color: #f1f7ff;
-}
-
-.no-history {
-color: #666;
-font-style: italic;
-margin-top: 10px;
-}
+*{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+body{ background:#f4f9ff; }
+header{ background:#0056b3; color:white; padding:20px; text-align:center; }
+.container{ max-width:1000px; margin:30px auto; padding:20px; }
+.card{ background:white; padding:20px; margin-bottom:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.15); }
+button{ background:#0056b3; color:white; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-size:16px; margin-top:10px; font-weight: bold; }
+button:hover{ background:#003d80; }
+.logout{ background:#dc3545; display: block; width: 100%; max-width: 200px; margin: 20px 0; text-align: center; }
+.logout:hover{ background:#b02a37; }
+.exam-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.exam-card { border-left: 5px solid #0056b3; }
+.history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+.history-table th, .history-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+.history-table th { background-color: #0056b3; color: white; }
+.history-table tr:hover { background-color: #f1f7ff; }
+.no-history { color: #666; font-style: italic; margin-top: 10px; }
+.badge { background: #28a745; color: white; padding: 3px 10px; border-radius: 20px; font-size: 12px; }
 </style>
 
 </head>
@@ -107,26 +39,15 @@ margin-top: 10px;
 
 <div class="card">
 <h2 id="welcomeText">Welcome Student</h2>
-<p>Select an examination below.</p>
+<p>Select an examination below to begin.</p>
 </div>
 
-<!-- Available Exams -->
+<!-- Available Exams - Auto loads from admin -->
 <div class="card">
-<h3>CPE 101 - Introduction to Computing</h3>
-<p>40 Questions | 30 Minutes</p>
-<button onclick="startExam('CPE101')">Start Exam</button>
+<h3>Available Examinations <span class="badge" id="examCount">0</span></h3>
+<div id="examsList" class="exam-grid">
+    <p>Loading exams...</p>
 </div>
-
-<div class="card">
-<h3>CPE 201 - Programming Fundamentals</h3>
-<p>50 Questions | 45 Minutes</p>
-<button onclick="startExam('CPE201')">Start Exam</button>
-</div>
-
-<div class="card">
-<h3>CPE 302 - Object Oriented Programming</h3>
-<p>60 Questions | 60 Minutes</p>
-<button onclick="startExam('CPE302')">Start Exam</button>
 </div>
 
 <!-- Dynamic Performance Tracker Log Card -->
@@ -143,23 +64,48 @@ margin-top: 10px;
 // 1. Verify User Login Status
 const userSession = JSON.parse(localStorage.getItem("pendoUser"));
 
-if (!userSession) {
+if (!userSession || userSession.role !== "student") {
+    alert("Please login as student");
     window.location.href = "login.html";
 } else {
     document.getElementById("welcomeText").innerText = `Welcome, ${userSession.name || 'Student'}`;
 }
 
-// 2. Launch targeted course exam session
+// 2. Load Available Courses from Admin
+function loadExams() {
+    const allQuestions = JSON.parse(localStorage.getItem("pendo_global_exam")) || [];
+    const examListDiv = document.getElementById("examsList");
+    const examCountSpan = document.getElementById("examCount");
+
+    if(allQuestions.length === 0) {
+        examListDiv.innerHTML = `<p style="color:gray;">No exams available yet. Admin needs to add questions.</p>`;
+        examCountSpan.innerText = 0;
+        return;
+    }
+
+    // Group by course - for now all questions are in 1 pool
+    examCountSpan.innerText = 1;
+    examListDiv.innerHTML = `
+        <div class="card exam-card">
+            <h3>CBT General Exam</h3>
+            <p><b>${allQuestions.length} Questions</b> | 30 Minutes</p>
+            <p>Questions created by Admin</p>
+            <button onclick="startExam('GENERAL')">Start Exam</button>
+        </div>
+    `;
+}
+
+// 3. Launch exam session
 function startExam(courseCode){
+    localStorage.setItem("currentCourse", courseCode);
     window.location.href = `exam.html?course=${courseCode}`;
 }
 
-// 3. Render student matched scores history list
+// 4. Render student scores history
 function loadScoreHistory() {
     const container = document.getElementById("historyContainer");
     const allScores = JSON.parse(localStorage.getItem("pendo_scores")) || [];
     
-    // Filter history records to only display entries belonging to this specific user
     const studentHistory = allScores.filter(record => record.studentEmail === userSession.email);
 
     if (studentHistory.length === 0) {
@@ -167,20 +113,19 @@ function loadScoreHistory() {
         return;
     }
 
-    // Build responsive data presentation structure layout table 
     let htmlTable = `
         <table class="history-table">
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Course Code</th>
+                    <th>Course</th>
                     <th>Score Result</th>
                 </tr>
             </thead>
             <tbody>
     `;
 
-    studentHistory.forEach(item => {
+    studentHistory.reverse().forEach(item => {
         htmlTable += `
             <tr>
                 <td>${item.date}</td>
@@ -190,23 +135,20 @@ function loadScoreHistory() {
         `;
     });
 
-    htmlTable += `
-            </tbody>
-        </table>
-    `;
-
+    htmlTable += `</tbody></table>`;
     container.innerHTML = htmlTable;
 }
 
-// 4. Session termination handler
+// 5. Logout
 function logout(){
     localStorage.removeItem("pendoUser");
     window.location.href = "login.html";
 }
 
-// Execute history pipeline hook on frame attachment
+// Run on load
+loadExams();
 loadScoreHistory();
 </script>
 
 </body>
-</html>
+    </html>

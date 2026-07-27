@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy CBT Exam</title>
 
+<!-- PWA CODE START -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0056b3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PENDO CBT">
+<!-- PWA CODE END -->
+
 <style>
 body{
 font-family:Arial,sans-serif;
@@ -122,35 +130,35 @@ background: #5a6268;
 </div>
 
 <script>
-// 1. ALL FALLBACK QUESTIONS REMOVED completely as requested
-const defaultFallbackDatabase = {
-    "CPE101": [],
-    "CPE201": [],
-    "CPE302": []
-};
+// PWA REGISTER CODE
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
 
-// 2. Fetch the dynamic question pool managed by the Admin Panel
-const adminDatabase = JSON.parse(localStorage.getItem("pendo_quiz_db")) || {};
+// FIXED: Now reads from pendo_global_exam same as admin
+const adminDatabase = JSON.parse(localStorage.getItem("pendo_global_exam")) || [];
 
 // 3. Parse URL parameter to check which course was clicked
 const urlParams = new URLSearchParams(window.location.search);
-const currentCourse = urlParams.get('course') || "CPE101"; 
+const currentCourse = urlParams.get('course') || "CPE101";
 
-// 4. Load questions
+// 4. Load questions - FIXED: admin now saves as simple array
 let examQuestions = [];
-if (adminDatabase[currentCourse] && adminDatabase[currentCourse].length > 0) {
-    examQuestions = [...adminDatabase[currentCourse]];
+if (adminDatabase.length > 0) {
+    examQuestions = [...adminDatabase];
 } else {
     examQuestions = [];
 }
 
-// 5. Shuffle implementation (Only shuffles if you have added questions)
+// 5. Shuffle implementation
 examQuestions.sort(() => Math.random() - 0.5);
 
 // 6. State tracking setup
 let currentIndex = 0;
 let userAnswers = new Array(examQuestions.length).fill(null);
-let timeRemaining = 30 * 60; // 30 minutes in seconds
+let timeRemaining = 30 * 60;
 let timerInterval;
 let antiCheatWarnings = 0;
 
@@ -170,14 +178,14 @@ function loadQuestion() {
     document.getElementById("current").innerText = currentIndex + 1;
     let currentQ = examQuestions[currentIndex];
     document.getElementById("question").innerText = currentQ.question;
-    
+
     let answersDiv = document.getElementById("answers");
     answersDiv.innerHTML = "";
-    
+
     currentQ.options.forEach((option, idx) => {
         let isSelected = userAnswers[currentIndex] === idx;
         answersDiv.innerHTML += `
-            <div class="option ${isSelected ? 'selected' : ''}" onclick="selectOption(${idx})">
+            <div class="option ${isSelected? 'selected' : ''}" onclick="selectOption(${idx})">
                 ${String.fromCharCode(65 + idx)}. ${option}
             </div>
         `;
@@ -221,15 +229,15 @@ function prevQuestion() {
 function startTimer() {
     timerInterval = setInterval(() => {
         timeRemaining--;
-        
+
         let minutes = Math.floor(timeRemaining / 60);
         let seconds = timeRemaining % 60;
-        
-        let displayMin = minutes < 10 ? "0" + minutes : minutes;
-        let displaySec = seconds < 10 ? "0" + seconds : seconds;
-        
+
+        let displayMin = minutes < 10? "0" + minutes : minutes;
+        let displaySec = seconds < 10? "0" + seconds : seconds;
+
         document.getElementById("timer").innerText = `${displayMin}:${displaySec}`;
-        
+
         if (timeRemaining <= 0) {
             clearInterval(timerInterval);
             alert("Your examination time limit is up! Processing auto-submission...");
@@ -255,18 +263,18 @@ function setupAntiCheat() {
 
 function submitExam() {
     clearInterval(timerInterval);
-    
+
     let correctCount = 0;
     examQuestions.forEach((q, i) => {
         if (userAnswers[i] === q.answer) {
             correctCount++;
         }
     });
-    
+
     const activeUser = JSON.parse(localStorage.getItem("pendoUser"));
     if (activeUser && activeUser.email) {
         let scoreHistory = JSON.parse(localStorage.getItem("pendo_scores")) || [];
-        
+
         let newRecord = {
             studentEmail: activeUser.email,
             studentName: activeUser.name,
@@ -274,11 +282,11 @@ function submitExam() {
             score: `${correctCount} / ${examQuestions.length}`,
             date: new Date().toLocaleDateString()
         };
-        
+
         scoreHistory.push(newRecord);
         localStorage.setItem("pendo_scores", JSON.stringify(scoreHistory));
     }
-    
+
     document.getElementById("examArea").style.display = "none";
     document.getElementById("resultArea").style.display = "block";
     document.getElementById("scoreText").innerText = `${correctCount} out of ${examQuestions.length}`;
@@ -288,5 +296,4 @@ initializeExam();
 </script>
 
 </body>
-    </html>
-    
+</html>

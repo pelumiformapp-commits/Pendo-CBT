@@ -122,19 +122,11 @@ background: #5a6268;
 </div>
 
 <script>
-// 1. Fallback default questions if the Admin Database is completely empty
+// 1. ALL FALLBACK QUESTIONS REMOVED completely as requested
 const defaultFallbackDatabase = {
-    "CPE101": [
-        { question: "What does CPU stand for?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Computer Processing Unit"], answer: 0 },
-        { question: "HTML stands for?", options: ["Hyper Text Markup Language", "High Transfer Machine Language", "Hyperlink Text Machine Language", "Home Tool Markup Language"], answer: 0 }
-    ],
-    "CPE201": [
-        { question: "Which language is used to style web pages?", options: ["Python", "CSS", "Java", "C++"], answer: 1 },
-        { question: "Which symbol is used for comments in JavaScript?", options: ["//", "<!-- -->", "##", "**"], answer: 0 }
-    ],
-    "CPE302": [
-        { question: "Which company developed JavaScript?", options: ["Microsoft", "Netscape", "Google", "Apple"], answer: 1 }
-    ]
+    "CPE101": [],
+    "CPE201": [],
+    "CPE302": []
 };
 
 // 2. Fetch the dynamic question pool managed by the Admin Panel
@@ -149,10 +141,10 @@ let examQuestions = [];
 if (adminDatabase[currentCourse] && adminDatabase[currentCourse].length > 0) {
     examQuestions = [...adminDatabase[currentCourse]];
 } else {
-    examQuestions = [...(defaultFallbackDatabase[currentCourse] || defaultFallbackDatabase["CPE101"])];
+    examQuestions = [];
 }
 
-// 5. Shuffle implementation (Randomizes array positioning)
+// 5. Shuffle implementation (Only shuffles if you have added questions)
 examQuestions.sort(() => Math.random() - 0.5);
 
 // 6. State tracking setup
@@ -164,17 +156,17 @@ let antiCheatWarnings = 0;
 
 function initializeExam() {
     document.getElementById("total").innerText = examQuestions.length;
+    if (examQuestions.length === 0) {
+        document.getElementById("question").innerHTML = "<p style='color:red;'>There are no questions added for this course yet! Please log in as Admin and create questions first.</p>";
+        document.getElementById("nextBtn").disabled = true;
+        return;
+    }
     loadQuestion();
     startTimer();
     setupAntiCheat();
 }
 
 function loadQuestion() {
-    if (examQuestions.length === 0) {
-        document.getElementById("question").innerText = "No questions available for this course.";
-        return;
-    }
-
     document.getElementById("current").innerText = currentIndex + 1;
     let currentQ = examQuestions[currentIndex];
     document.getElementById("question").innerText = currentQ.question;
@@ -191,7 +183,6 @@ function loadQuestion() {
         `;
     });
 
-    // Control navigation buttons state configurations
     document.getElementById("prevBtn").disabled = (currentIndex === 0);
 
     if (currentIndex === examQuestions.length - 1) {
@@ -247,7 +238,6 @@ function startTimer() {
     }, 1000);
 }
 
-// 7. Anti-Cheating engine tracking implementation
 function setupAntiCheat() {
     document.addEventListener("visibilitychange", function () {
         if (document.hidden) {
@@ -273,7 +263,6 @@ function submitExam() {
         }
     });
     
-    // Save Score History profile to localStorage database
     const activeUser = JSON.parse(localStorage.getItem("pendoUser"));
     if (activeUser && activeUser.email) {
         let scoreHistory = JSON.parse(localStorage.getItem("pendo_scores")) || [];
@@ -290,15 +279,14 @@ function submitExam() {
         localStorage.setItem("pendo_scores", JSON.stringify(scoreHistory));
     }
     
-    // Toggle application screen layouts presentation views
     document.getElementById("examArea").style.display = "none";
     document.getElementById("resultArea").style.display = "block";
     document.getElementById("scoreText").innerText = `${correctCount} out of ${examQuestions.length}`;
 }
 
-// Fire system initialization parameters workflow loop
 initializeExam();
 </script>
 
 </body>
-</html>
+    </html>
+    

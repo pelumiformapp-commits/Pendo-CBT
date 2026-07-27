@@ -38,11 +38,12 @@ button:hover{ background:#003d80; }
   <option value="CPE302">CPE 302 - Object Oriented Programming</option>
 </select>
 
-<input type="text" id="question" placeholder="Question Text">
-<input type="text" id="option1" placeholder="Option A">
-<input type="text" id="option2" placeholder="Option B">
-<input type="text" id="option3" placeholder="Option C">
-<input type="text" id="option4" placeholder="Option D">
+<!-- Form fields are completely clear and editable -->
+<input type="text" id="question" placeholder="Type your question statement here...">
+<input type="text" id="option1" placeholder="Type Option A here...">
+<input type="text" id="option2" placeholder="Type Option B here...">
+<input type="text" id="option3" placeholder="Type Option C here...">
+<input type="text" id="option4" placeholder="Type Option D here...">
 
 <label><strong>Correct Answer:</strong></label>
 <select id="answer">
@@ -75,7 +76,7 @@ if (!userSession || userSession.role !== "admin") {
 // 2. Fetch or initialize our course-grouped database structure
 let database = JSON.parse(localStorage.getItem("pendo_quiz_db")) || { "CPE101": [], "CPE201": [], "CPE302": [] };
 
-// Track if we are currently editing a question
+// Track edit state parameters
 let editMode = false;
 let editCourse = "";
 let editIndex = null;
@@ -101,18 +102,17 @@ function saveQuestion(){
     };
 
     if (editMode) {
-        // Remove from old course if course was changed during edit
+        // Remove from old course index if it changed during edit configuration
         if (editCourse !== course) {
             database[editCourse].splice(editIndex, 1);
             database[course].push(questionData);
         } else {
-            // Update inline
+            // Update targeted question inline index
             database[course][editIndex] = questionData;
         }
         alert("Question updated successfully!");
         cancelEdit();
     } else {
-        // Fresh creation mode
         database[course].push(questionData);
         alert("Question saved to " + course);
     }
@@ -129,7 +129,7 @@ function editQuestion(course, index) {
 
     let targetQ = database[course][index];
 
-    // Populate Form Inputs
+    // Explicit array targeting allows text to safely write back out to inputs
     document.getElementById("courseCode").value = course;
     document.getElementById("question").value = targetQ.question;
     document.getElementById("option1").value = targetQ.options[0];
@@ -138,12 +138,10 @@ function editQuestion(course, index) {
     document.getElementById("option4").value = targetQ.options[3];
     document.getElementById("answer").value = targetQ.answer;
 
-    // Adjust Buttons layout
     document.getElementById("formTitle").innerText = "Edit Question";
     document.getElementById("submitBtn").innerText = "Update Question";
     document.getElementById("cancelEditBtn").style.display = "block";
     
-    // Smooth scroll up to form view container area
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -212,8 +210,9 @@ function logout() {
     window.location.href = "login.html";
 }
 
-// Initial execution render routine pass
+// Initial display execution context render pass
 displayQuestions();
 </script>
 </body>
-</html>
+  </html>
+  

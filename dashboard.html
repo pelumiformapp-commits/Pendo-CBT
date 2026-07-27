@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy - Dashboard</title>
-
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0056b3">
-
 <style>
 *{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
 body{ background:#f4f9ff; }
@@ -16,18 +14,19 @@ header{ background:#0056b3; color:white; padding:20px; text-align:center; }
 .card{ background:white; padding:20px; margin-bottom:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.15); }
 button{ background:#0056b3; color:white; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-size:16px; margin-top:10px; font-weight: bold; }
 button:hover{ background:#003d80; }
-.logout{ background:#dc3545; display: block; width: 100%; max-width: 200px; margin: 20px 0; text-align: center; }
+.logout{ background:#dc3545; display: block; width: 100%; max-width: 200px; margin: 20px 0; }
 .logout:hover{ background:#b02a37; }
-.exam-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.exam-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
 .exam-card { border-left: 5px solid #0056b3; }
+.jamb { border-left-color: #28a745; }
+.waec { border-left-color: #ffc107; }
+.postutme { border-left-color: #dc3545; }
 .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 .history-table th, .history-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
 .history-table th { background-color: #0056b3; color: white; }
-.history-table tr:hover { background-color: #f1f7ff; }
 .no-history { color: #666; font-style: italic; margin-top: 10px; }
-.badge { background: #28a745; color: white; padding: 3px 10px; border-radius: 20px; font-size: 12px; }
+.badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; color: white; }
 </style>
-
 </head>
 <body>
 
@@ -39,18 +38,18 @@ button:hover{ background:#003d80; }
 
 <div class="card">
 <h2 id="welcomeText">Welcome Student</h2>
-<p>Select an examination below to begin.</p>
+<p>Select your Examination below</p>
 </div>
 
-<!-- Available Exams - Auto loads from admin -->
+<!-- Available Exams -->
 <div class="card">
-<h3>Available Examinations <span class="badge" id="examCount">0</span></h3>
+<h3>Available Examinations <span class="badge" style="background:#28a745" id="examCount">0</span></h3>
 <div id="examsList" class="exam-grid">
     <p>Loading exams...</p>
 </div>
 </div>
 
-<!-- Dynamic Performance Tracker Log Card -->
+<!-- History -->
 <div class="card">
 <h2>Your Exam History</h2>
 <div id="historyContainer"></div>
@@ -61,17 +60,15 @@ button:hover{ background:#003d80; }
 </div>
 
 <script>
-// 1. Verify User Login Status
 const userSession = JSON.parse(localStorage.getItem("pendoUser"));
 
 if (!userSession || userSession.role !== "student") {
-    alert("Please login as student");
     window.location.href = "login.html";
 } else {
-    document.getElementById("welcomeText").innerText = `Welcome, ${userSession.name || 'Student'}`;
+    document.getElementById("welcomeText").innerText = `Welcome, ${userSession.name}`;
 }
 
-// 2. Load Available Courses from Admin
+// Load Available Exams by Subject from Admin
 function loadExams() {
     const allQuestions = JSON.parse(localStorage.getItem("pendo_global_exam")) || [];
     const examListDiv = document.getElementById("examsList");
@@ -83,72 +80,62 @@ function loadExams() {
         return;
     }
 
-    // Group by course - for now all questions are in 1 pool
-    examCountSpan.innerText = 1;
-    examListDiv.innerHTML = `
-        <div class="card exam-card">
-            <h3>CBT General Exam</h3>
-            <p><b>${allQuestions.length} Questions</b> | 30 Minutes</p>
-            <p>Questions created by Admin</p>
-            <button onclick="startExam('GENERAL')">Start Exam</button>
-        </div>
-    `;
+    // Group questions by Subject
+    const subjects = {};
+    allQuestions.forEach(q => {
+        if(!subjects[q.subject]) subjects[q.subject] = [];
+        subjects[q.subject].push(q);
+    });
+
+    examCountSpan.innerText = Object.keys(subjects).length;
+    examListDiv.innerHTML = "";
+
+    Object.keys(subjects).forEach(subject => {
+        let examType = "jamb"; // default
+        if(subject.toLowerCase().includes("waec")) examType = "waec";
+        if(subject.toLowerCase().includes("post")) examType = "postutme";
+        
+        examListDiv.innerHTML += `
+            <div class="card exam-card ${examType}">
+                <h3>${subject}</h3>
+                <p><b>${subjects[subject].length} Questions</b> | 40 Minutes</p>
+                <p>JAMB/UTME/WAEC Standard</p>
+                <button onclick="startExam('${subject}')">Start Exam</button>
+            </div>
+        `;
+    });
 }
 
-// 3. Launch exam session
-function startExam(courseCode){
-    localStorage.setItem("currentCourse", courseCode);
-    window.location.href = `exam.html?course=${courseCode}`;
+function startExam(subject){
+    localStorage.setItem("currentSubject", subject);
+    window.location.href = `exam.html?subject=${encodeURIComponent(subject)}`;
 }
 
-// 4. Render student scores history
 function loadScoreHistory() {
     const container = document.getElementById("historyContainer");
     const allScores = JSON.parse(localStorage.getItem("pendo_scores")) || [];
-    
     const studentHistory = allScores.filter(record => record.studentEmail === userSession.email);
 
     if (studentHistory.length === 0) {
-        container.innerHTML = `<p class="no-history">You haven't completed any examinations yet.</p>`;
+        container.innerHTML = `<p class="no-history">You haven't taken any exams yet.</p>`;
         return;
     }
 
-    let htmlTable = `
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Course</th>
-                    <th>Score Result</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
+    let htmlTable = `<table class="history-table"><thead><tr><th>Date</th><th>Subject</th><th>Score</th></tr></thead><tbody>`;
     studentHistory.reverse().forEach(item => {
-        htmlTable += `
-            <tr>
-                <td>${item.date}</td>
-                <td><strong>${item.courseCode}</strong></td>
-                <td style="color: #0056b3; font-weight: bold;">${item.score}</td>
-            </tr>
-        `;
+        htmlTable += `<tr><td>${item.date}</td><td><strong>${item.subject}</strong></td><td style="color: #28a745; font-weight: bold;">${item.score}</td></tr>`;
     });
-
     htmlTable += `</tbody></table>`;
     container.innerHTML = htmlTable;
 }
 
-// 5. Logout
 function logout(){
     localStorage.removeItem("pendoUser");
     window.location.href = "login.html";
 }
 
-// Run on load
 loadExams();
 loadScoreHistory();
 </script>
-
 </body>
-    </html>
+</html>

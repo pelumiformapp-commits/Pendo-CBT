@@ -47,6 +47,7 @@ border-radius:5px;
 cursor:pointer;
 font-size:16px;
 margin-top:10px;
+font-weight: bold;
 }
 
 button:hover{
@@ -55,10 +56,43 @@ background:#003d80;
 
 .logout{
 background:#dc3545;
+display: block;
+width: 100%;
+max-width: 200px;
+margin: 20px 0;
+text-align: center;
 }
 
 .logout:hover{
 background:#b02a37;
+}
+
+/* History log styling rules */
+.history-table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 15px;
+}
+
+.history-table th, .history-table td {
+padding: 12px;
+text-align: left;
+border-bottom: 1px solid #ddd;
+}
+
+.history-table th {
+background-color: #0056b3;
+color: white;
+}
+
+.history-table tr:hover {
+background-color: #f1f7ff;
+}
+
+.no-history {
+color: #666;
+font-style: italic;
+margin-top: 10px;
 }
 </style>
 
@@ -76,6 +110,7 @@ background:#b02a37;
 <p>Select an examination below.</p>
 </div>
 
+<!-- Available Exams -->
 <div class="card">
 <h3>CPE 101 - Introduction to Computing</h3>
 <p>40 Questions | 30 Minutes</p>
@@ -94,30 +129,83 @@ background:#b02a37;
 <button onclick="startExam('CPE302')">Start Exam</button>
 </div>
 
+<!-- Dynamic Performance Tracker Log Card -->
+<div class="card">
+<h2>Your Exam History</h2>
+<div id="historyContainer"></div>
+</div>
+
 <button class="logout" onclick="logout()">Logout</button>
 
 </div>
 
 <script>
-// Check if user is logged in
+// 1. Verify User Login Status
 const userSession = JSON.parse(localStorage.getItem("pendoUser"));
 
 if (!userSession) {
     window.location.href = "login.html";
 } else {
-    // Dynamically set student name if available in user object
     document.getElementById("welcomeText").innerText = `Welcome, ${userSession.name || 'Student'}`;
 }
 
+// 2. Launch targeted course exam session
 function startExam(courseCode){
-    // Redirect to the exam page while passing the specific course code
     window.location.href = `exam.html?course=${courseCode}`;
 }
 
+// 3. Render student matched scores history list
+function loadScoreHistory() {
+    const container = document.getElementById("historyContainer");
+    const allScores = JSON.parse(localStorage.getItem("pendo_scores")) || [];
+    
+    // Filter history records to only display entries belonging to this specific user
+    const studentHistory = allScores.filter(record => record.studentEmail === userSession.email);
+
+    if (studentHistory.length === 0) {
+        container.innerHTML = `<p class="no-history">You haven't completed any examinations yet.</p>`;
+        return;
+    }
+
+    // Build responsive data presentation structure layout table 
+    let htmlTable = `
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course Code</th>
+                    <th>Score Result</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    studentHistory.forEach(item => {
+        htmlTable += `
+            <tr>
+                <td>${item.date}</td>
+                <td><strong>${item.courseCode}</strong></td>
+                <td style="color: #0056b3; font-weight: bold;">${item.score}</td>
+            </tr>
+        `;
+    });
+
+    htmlTable += `
+            </tbody>
+        </table>
+    `;
+
+    container.innerHTML = htmlTable;
+}
+
+// 4. Session termination handler
 function logout(){
     localStorage.removeItem("pendoUser");
     window.location.href = "login.html";
 }
+
+// Execute history pipeline hook on frame attachment
+loadScoreHistory();
 </script>
 
 </body>

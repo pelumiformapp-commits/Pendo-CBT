@@ -4,62 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PĒÑDØ Academy Admin Panel</title>
-
 <style>
-body{
-font-family:Arial,sans-serif;
-background:#f4f9ff;
-margin:0;
-}
-
-header{
-background:#0056b3;
-color:white;
-padding:20px;
-text-align:center;
-}
-
-.container{
-max-width:900px;
-margin:30px auto;
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,.2);
-}
-
-input,textarea{
-width:100%;
-padding:10px;
-margin:10px 0;
-box-sizing: border-box;
-}
-
-button{
-background:#0056b3;
-color:white;
-padding:12px 20px;
-border:none;
-border-radius:5px;
-cursor:pointer;
-width: 100%;
-font-weight: bold;
-}
-
-button:hover{
-background:#003d80;
-}
-
-.question{
-padding:15px;
-border-bottom:1px solid #ddd;
-background: #f9f9f9;
-margin-bottom: 10px;
-border-left: 5px solid #0056b3;
-}
+body{ font-family:Arial,sans-serif; background:#f4f9ff; margin:0; }
+header{ background:#0056b3; color:white; padding:20px; text-align:center; }
+.container{ max-width:900px; margin:30px auto; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.2); }
+input, select{ width:100%; padding:10px; margin:10px 0; box-sizing: border-box; }
+button{ background:#0056b3; color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; width: 100%; font-weight: bold; }
+button:hover{ background:#003d80; }
+.question{ padding:15px; border-bottom:1px solid #ddd; background: #f9f9f9; margin-bottom: 10px; border-left: 5px solid #0056b3; }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -67,93 +21,102 @@ border-left: 5px solid #0056b3;
 </header>
 
 <div class="container">
-
 <h2>Add New Question</h2>
 
-<input type="text" id="question" placeholder="Question">
+<label><strong>Select Course:</strong></label>
+<select id="courseCode">
+  <option value="CPE101">CPE 101 - Introduction to Computing</option>
+  <option value="CPE201">CPE 201 - Programming Fundamentals</option>
+  <option value="CPE302">CPE 302 - Object Oriented Programming</option>
+</select>
+
+<input type="text" id="question" placeholder="Question Text">
 <input type="text" id="option1" placeholder="Option A">
 <input type="text" id="option2" placeholder="Option B">
 <input type="text" id="option3" placeholder="Option C">
 <input type="text" id="option4" placeholder="Option D">
-<input type="number" id="answer" placeholder="Correct Answer Index (0 for A, 1 for B, 2 for C, 3 for D)" min="0" max="3">
+
+<label><strong>Correct Answer:</strong></label>
+<select id="answer">
+  <option value="0">Option A</option>
+  <option value="1">Option B</option>
+  <option value="2">Option C</option>
+  <option value="3">Option D</option>
+</select>
 
 <button onclick="saveQuestion()">Save Question</button>
 
-<hr>
-
-<h2>Saved Questions</h2>
+<hr style="margin: 30px 0;">
+<h2>All Saved Questions</h2>
 <div id="list"></div>
-
+<br>
+<button onclick="window.location.href='login.html'" style="background: #dc3545;">Logout to Login Screen</button>
 </div>
 
 <script>
-let questions = JSON.parse(localStorage.getItem("questions")) || [];
+// Fetch or initialize our course-grouped database structure
+let database = JSON.parse(localStorage.getItem("pendo_quiz_db")) || { "CPE101": [], "CPE201": [], "CPE302": [] };
 
 function saveQuestion(){
+    let course = document.getElementById("courseCode").value;
     let qText = document.getElementById("question").value.trim();
     let opt1 = document.getElementById("option1").value.trim();
     let opt2 = document.getElementById("option2").value.trim();
     let opt3 = document.getElementById("option3").value.trim();
     let opt4 = document.getElementById("option4").value.trim();
-    let ansVal = document.getElementById("answer").value;
+    let ansVal = Number(document.getElementById("answer").value);
 
-    // Validation to prevent empty records or wrong numbers
-    if(!qText || !opt1 || !opt2 || !opt3 || !opt4 || ansVal === "") {
-        alert("Please fill in all fields.");
+    if(!qText || !opt1 || !opt2 || !opt3 || !opt4) {
+        alert("Please fill in all text fields.");
         return;
     }
 
-    let ansIndex = Number(ansVal);
-    if(ansIndex < 0 || ansIndex > 3) {
-        alert("Correct Answer must be a number between 0 and 3.");
-        return;
-    }
-
-    let q = {
+    let newQ = {
         question: qText,
         options: [opt1, opt2, opt3, opt4],
-        answer: ansIndex
+        answer: ansVal
     };
 
-    questions.push(q);
-    localStorage.setItem("questions", JSON.stringify(questions));
-    alert("Question Saved Successfully!");
+    // Push into the specific course chosen
+    database[course].push(newQ);
+    localStorage.setItem("pendo_quiz_db", JSON.stringify(database));
+    alert("Question saved to " + course);
 
-    // Clear the form fields for the next entry
+    // Reset inputs
     document.getElementById("question").value = "";
     document.getElementById("option1").value = "";
     document.getElementById("option2").value = "";
     document.getElementById("option3").value = "";
     document.getElementById("option4").value = "";
-    document.getElementById("answer").value = "";
 
     displayQuestions();
 }
 
 function displayQuestions(){
     let output = "";
-    if(questions.length === 0) {
-        output = "<p>No questions saved yet.</p>";
-    } else {
-        questions.forEach((q, i) => {
-            output += `
-            <div class="question">
-                <b>${i+1}. ${q.question}</b><br>
-                A. ${q.options[0]} ${q.answer === 0 ? '✔️' : ''}<br>
-                B. ${q.options[1]} ${q.answer === 1 ? '✔️' : ''}<br>
-                C. ${q.options[2]} ${q.answer === 2 ? '✔️' : ''}<br>
-                D. ${q.options[3]} ${q.answer === 3 ? '✔️' : ''}
-            </div>
-            `;
-        });
-    }
+    let courses = ["CPE101", "CPE201", "CPE302"];
+    
+    courses.forEach(c => {
+        output += `<h3>${c} Questions</h3>`;
+        if(!database[c] || database[c].length === 0) {
+            output += "<p style='color:gray;'>No questions added yet.</p>";
+        } else {
+            database[c].forEach((q, i) => {
+                output += `
+                <div class="question">
+                    <b>${i+1}. ${q.question}</b><br>
+                    A. ${q.options[0]} ${q.answer === 0 ? '✔️' : ''}<br>
+                    B. ${q.options[1]} ${q.answer === 1 ? '✔️' : ''}<br>
+                    C. ${q.options[2]} ${q.answer === 2 ? '✔️' : ''}<br>
+                    D. ${q.options[3]} ${q.answer === 3 ? '✔️' : ''}
+                </div>`;
+            });
+        }
+    });
     document.getElementById("list").innerHTML = output;
 }
 
-// Initial display load
 displayQuestions();
 </script>
-
 </body>
-  </html>
-  
+</html>

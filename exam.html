@@ -3,297 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PĒÑDØ Academy CBT Exam</title>
-
-<!-- PWA CODE START -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0056b3">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PENDO CBT">
-<!-- PWA CODE END -->
-
+<title>PĒÑDØ Academy - Exam</title>
 <style>
-body{
-font-family:Arial,sans-serif;
-background:#f4f9ff;
-margin:0;
-padding:20px;
-}
-
-.container{
-max-width:800px;
-margin:auto;
-background:#fff;
-padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,.2);
-}
-
-.top{
-display:flex;
-justify-content:space-between;
-margin-bottom:20px;
-font-weight:bold;
-color:#0056b3;
-}
-
-.question{
-font-size:22px;
-margin-bottom:20px;
-}
-
-.option{
-display:block;
-background:#f8f8f8;
-padding:15px;
-margin:10px 0;
-border-radius:8px;
-cursor:pointer;
-border: 1px solid #eee;
-transition: all 0.2s ease;
-}
-
-.option:hover{
-background:#d9ecff;
-}
-
-.option.selected {
-background: #b3d7ff;
-border-left: 5px solid #0056b3;
-font-weight: bold;
-}
-
-.button-group {
-display: flex;
-gap: 15px;
-margin-top: 20px;
-}
-
-button{
-background:#0056b3;
-color:#fff;
-padding:12px 20px;
-border:none;
-border-radius:5px;
-cursor:pointer;
-font-weight: bold;
-flex: 1;
-}
-
-button:hover{
-background:#003d80;
-}
-
-button:disabled {
-background: #cccccc;
-cursor: not-allowed;
-}
-
-#prevBtn {
-background: #6c757d;
-}
-
-#prevBtn:hover:not(:disabled) {
-background: #5a6268;
-}
+*{ margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+body{ background:#f4f9ff; }
+header{ background:#0056b3; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+.container{ max-width:800px; margin:20px auto; padding:20px; }
+.card{ background:white; padding:25px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.15); margin-bottom:20px; }
+.question-num{ color:#0056b3; font-weight:bold; }
+.timer{ color:#dc3545; font-weight:bold; font-size:18px; }
+.options label{ display:block; background:#f8f9fa; padding:12px; margin:8px 0; border-radius:5px; cursor:pointer; border:2px solid #ddd; }
+.options input[type="radio"]{ margin-right:10px; }
+.options label:hover{ background:#e2efff; border-color:#0056b3; }
+button{ background:#0056b3; color:white; padding:14px 25px; border:none; border-radius:5px; cursor:pointer; font-size:16px; font-weight:bold; width:100%; margin-top:15px; }
+button:hover{ background:#003d80; }
+.login-box{ text-align:center; }
+.login-box input{ width:100%; padding:12px; margin:10px 0; border:1px solid #ccc; border-radius:5px; }
 </style>
-
 </head>
 <body>
 
+<header>
+<div class="question-num" id="qNum">Question 1/1</div>
+<div class="timer" id="timer">Time Left: 30:00</div>
+</header>
+
 <div class="container">
-
-<!-- Active Exam Area -->
-<div id="examArea">
-    <div class="top">
-        <div>Question <span id="current">1</span>/<span id="total">0</span></div>
-        <div>Time Left: <span id="timer">30:00</span></div>
-    </div>
-
-    <div class="question" id="question">Loading question...</div>
-    <div id="answers"></div>
-
-    <div class="button-group">
-        <button id="prevBtn" onclick="prevQuestion()" disabled>Previous</button>
-        <button id="nextBtn" onclick="nextQuestion()">Next Question</button>
-    </div>
+<div id="loginCard" class="card login-box">
+    <h2>Welcome to PĒÑDØ CBT</h2>
+    <p>Enter your details to start</p>
+    <input type="text" id="studentName" placeholder="Enter Full Name">
+    <input type="text" id="studentEmail" placeholder="Enter Phone/Email">
+    <button onclick="startStudentSession()">Start Exam</button>
 </div>
 
-<!-- Results Area (Hidden Initially) -->
-<div id="resultArea" style="display: none; text-align: center; padding: 20px;">
-    <h2>Examination Completed!</h2>
-    <p style="font-size: 24px; margin: 20px 0;">Your Score: <span id="scoreText" style="font-weight: bold; color: #0056b3;"></span></p>
-    <button onclick="window.location.href='dashboard.html'" style="max-width: 250px; margin: 0 auto; display: block;">Return to Dashboard</button>
+<div id="examCard" class="card" style="display:none;">
+    <h3 id="questionText"></h3>
+    <div class="options" id="optionsList"></div>
+    <button onclick="nextQuestion()">Next Question</button>
 </div>
 
+<div id="resultCard" class="card" style="display:none; text-align:center;">
+    <h2>Exam Submitted!</h2>
+    <h3 id="finalScore"></h3>
+    <button onclick="window.location.href='index.html'">Go Home</button>
+</div>
 </div>
 
 <script>
-// PWA REGISTER CODE
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
-  });
-}
-
-// FIXED: Now reads from pendo_global_exam same as admin
-const adminDatabase = JSON.parse(localStorage.getItem("pendo_global_exam")) || [];
-
-// 3. Parse URL parameter to check which course was clicked
-const urlParams = new URLSearchParams(window.location.search);
-const currentCourse = urlParams.get('course') || "CPE101";
-
-// 4. Load questions - FIXED: admin now saves as simple array
-let examQuestions = [];
-if (adminDatabase.length > 0) {
-    examQuestions = [...adminDatabase];
-} else {
-    examQuestions = [];
-}
-
-// 5. Shuffle implementation
-examQuestions.sort(() => Math.random() - 0.5);
-
-// 6. State tracking setup
-let currentIndex = 0;
-let userAnswers = new Array(examQuestions.length).fill(null);
-let timeRemaining = 30 * 60;
+let questions = [];
+let currentQ = 0;
+let score = 0;
+let answers = [];
 let timerInterval;
-let antiCheatWarnings = 0;
+let timeLeft = 30 * 60; // 30 minutes
+let studentInfo = {};
+let subject = new URLSearchParams(window.location.search).get('subject') || 'General';
 
-function initializeExam() {
-    document.getElementById("total").innerText = examQuestions.length;
-    if (examQuestions.length === 0) {
-        document.getElementById("question").innerHTML = "<p style='color:red;'>There are no questions added for this course yet! Please log in as Admin and create questions first.</p>";
-        document.getElementById("nextBtn").disabled = true;
-        return;
-    }
-    loadQuestion();
+function startStudentSession(){
+    let name = document.getElementById("studentName").value.trim();
+    let email = document.getElementById("studentEmail").value.trim();
+    if(!name ||!email){ alert("Please enter name and email"); return; }
+
+    studentInfo = {name, email};
+    document.getElementById("loginCard").style.display = "none";
+    document.getElementById("examCard").style.display = "block";
+
+    loadQuestions();
     startTimer();
-    setupAntiCheat();
 }
 
-function loadQuestion() {
-    document.getElementById("current").innerText = currentIndex + 1;
-    let currentQ = examQuestions[currentIndex];
-    document.getElementById("question").innerText = currentQ.question;
+function loadQuestions(){
+    let allQuestions = JSON.parse(localStorage.getItem("pendo_global_exam")) || [];
+    questions = allQuestions.filter(q => q.subject === subject);
 
-    let answersDiv = document.getElementById("answers");
-    answersDiv.innerHTML = "";
-
-    currentQ.options.forEach((option, idx) => {
-        let isSelected = userAnswers[currentIndex] === idx;
-        answersDiv.innerHTML += `
-            <div class="option ${isSelected? 'selected' : ''}" onclick="selectOption(${idx})">
-                ${String.fromCharCode(65 + idx)}. ${option}
-            </div>
-        `;
-    });
-
-    document.getElementById("prevBtn").disabled = (currentIndex === 0);
-
-    if (currentIndex === examQuestions.length - 1) {
-        document.getElementById("nextBtn").innerText = "Submit Exam";
-    } else {
-        document.getElementById("nextBtn").innerText = "Next Question";
-    }
-}
-
-function selectOption(index) {
-    userAnswers[currentIndex] = index;
-    loadQuestion();
-}
-
-function nextQuestion() {
-    if (userAnswers[currentIndex] === null) {
-        alert("Please select an answer choice before moving forward.");
+    if(questions.length === 0){
+        alert("No questions found for " + subject);
+        window.location.href = "index.html";
         return;
     }
-
-    if (currentIndex < examQuestions.length - 1) {
-        currentIndex++;
-        loadQuestion();
-    } else {
-        submitExam();
-    }
+    showQuestion();
 }
 
-function prevQuestion() {
-    if (currentIndex > 0) {
-        currentIndex--;
-        loadQuestion();
-    }
+function showQuestion(){
+    if(currentQ >= questions.length){ submitExam(); return; }
+
+    let q = questions[currentQ];
+    document.getElementById("qNum").innerText = `Question ${currentQ+1}/${questions.length}`;
+    document.getElementById("questionText").innerText = q.question;
+
+    let optionsHTML = "";
+    q.options.forEach((opt, i) => {
+        optionsHTML += `<label><input type="radio" name="answer" value="${i}"> ${String.fromCharCode(65+i)}. ${opt}</label>`;
+    });
+    document.getElementById("optionsList").innerHTML = optionsHTML;
 }
 
-function startTimer() {
+function nextQuestion(){
+    let selected = document.querySelector('input[name="answer"]:checked');
+    if(!selected){ alert("Please select an answer"); return; }
+
+    if(Number(selected.value) === questions[currentQ].answer){ score++; }
+    currentQ++;
+    showQuestion();
+}
+
+function startTimer(){
     timerInterval = setInterval(() => {
-        timeRemaining--;
-
-        let minutes = Math.floor(timeRemaining / 60);
-        let seconds = timeRemaining % 60;
-
-        let displayMin = minutes < 10? "0" + minutes : minutes;
-        let displaySec = seconds < 10? "0" + seconds : seconds;
-
-        document.getElementById("timer").innerText = `${displayMin}:${displaySec}`;
-
-        if (timeRemaining <= 0) {
-            clearInterval(timerInterval);
-            alert("Your examination time limit is up! Processing auto-submission...");
-            submitExam();
-        }
+        timeLeft--;
+        let min = Math.floor(timeLeft/60);
+        let sec = timeLeft%60;
+        document.getElementById("timer").innerText = `Time Left: ${min}:${sec < 10? '0' : ''}${sec}`;
+        if(timeLeft <= 0){ clearInterval(timerInterval); submitExam(); }
     }, 1000);
 }
 
-function setupAntiCheat() {
-    document.addEventListener("visibilitychange", function () {
-        if (document.hidden) {
-            antiCheatWarnings++;
-            if (antiCheatWarnings >= 3) {
-                clearInterval(timerInterval);
-                alert("Exam terminated immediately due to repeated tab switching.");
-                submitExam();
-            } else {
-                alert("Warning " + antiCheatWarnings + "/3: Do not leave the exam page or switch tabs!");
-            }
-        }
-    });
-}
-
-function submitExam() {
+function submitExam(){
     clearInterval(timerInterval);
+    document.getElementById("examCard").style.display = "none";
+    document.getElementById("resultCard").style.display = "block";
+    document.getElementById("finalScore").innerText = `Your Score: ${score}/${questions.length}`;
 
-    let correctCount = 0;
-    examQuestions.forEach((q, i) => {
-        if (userAnswers[i] === q.answer) {
-            correctCount++;
-        }
+    // Save to gradebook
+    let allScores = JSON.parse(localStorage.getItem("pendo_scores")) || [];
+    allScores.push({
+        studentName: studentInfo.name,
+        studentEmail: studentInfo.email,
+        subject: subject,
+        score: `${score}/${questions.length}`,
+        date: new Date().toLocaleString()
     });
-
-    const activeUser = JSON.parse(localStorage.getItem("pendoUser"));
-    if (activeUser && activeUser.email) {
-        let scoreHistory = JSON.parse(localStorage.getItem("pendo_scores")) || [];
-
-        let newRecord = {
-            studentEmail: activeUser.email,
-            studentName: activeUser.name,
-            courseCode: currentCourse,
-            score: `${correctCount} / ${examQuestions.length}`,
-            date: new Date().toLocaleDateString()
-        };
-
-        scoreHistory.push(newRecord);
-        localStorage.setItem("pendo_scores", JSON.stringify(scoreHistory));
-    }
-
-    document.getElementById("examArea").style.display = "none";
-    document.getElementById("resultArea").style.display = "block";
-    document.getElementById("scoreText").innerText = `${correctCount} out of ${examQuestions.length}`;
+    localStorage.setItem("pendo_scores", JSON.stringify(allScores));
 }
-
-initializeExam();
 </script>
-
 </body>
-</html>
+    </html>

@@ -147,24 +147,34 @@ const currentCourse = urlParams.get('course') || "CPE101";
 // 4. Load questions
 let examQuestions = [];
 if (adminDatabase[currentCourse] && adminDatabase[currentCourse].length > 0) {
-    examQuestions = adminDatabase[currentCourse];
+    examQuestions = [...adminDatabase[currentCourse]];
 } else {
-    examQuestions = defaultFallbackDatabase[currentCourse] || defaultFallbackDatabase["CPE101"];
+    examQuestions = [...(defaultFallbackDatabase[currentCourse] || defaultFallbackDatabase["CPE101"])];
 }
 
-// 5. State tracking
+// 5. Shuffle implementation (Randomizes array positioning)
+examQuestions.sort(() => Math.random() - 0.5);
+
+// 6. State tracking setup
 let currentIndex = 0;
 let userAnswers = new Array(examQuestions.length).fill(null);
-let timeRemaining = 30 * 60; // 30 minutes
+let timeRemaining = 30 * 60; // 30 minutes in seconds
 let timerInterval;
+let antiCheatWarnings = 0;
 
 function initializeExam() {
     document.getElementById("total").innerText = examQuestions.length;
     loadQuestion();
     startTimer();
+    setupAntiCheat();
 }
 
 function loadQuestion() {
+    if (examQuestions.length === 0) {
+        document.getElementById("question").innerText = "No questions available for this course.";
+        return;
+    }
+
     document.getElementById("current").innerText = currentIndex + 1;
     let currentQ = examQuestions[currentIndex];
     document.getElementById("question").innerText = currentQ.question;
@@ -181,7 +191,7 @@ function loadQuestion() {
         `;
     });
 
-    // Control navigation buttons state
+    // Control navigation buttons state configurations
     document.getElementById("prevBtn").disabled = (currentIndex === 0);
 
     if (currentIndex === examQuestions.length - 1) {
@@ -237,6 +247,22 @@ function startTimer() {
     }, 1000);
 }
 
+// 7. Anti-Cheating engine tracking implementation
+function setupAntiCheat() {
+    document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+            antiCheatWarnings++;
+            if (antiCheatWarnings >= 3) {
+                clearInterval(timerInterval);
+                alert("Exam terminated immediately due to repeated tab switching.");
+                submitExam();
+            } else {
+                alert("Warning " + antiCheatWarnings + "/3: Do not leave the exam page or switch tabs!");
+            }
+        }
+    });
+}
+
 function submitExam() {
     clearInterval(timerInterval);
     
@@ -247,7 +273,7 @@ function submitExam() {
         }
     });
     
-    // Save Score History to localStorage
+    // Save Score History profile to localStorage database
     const activeUser = JSON.parse(localStorage.getItem("pendoUser"));
     if (activeUser && activeUser.email) {
         let scoreHistory = JSON.parse(localStorage.getItem("pendo_scores")) || [];
@@ -264,12 +290,13 @@ function submitExam() {
         localStorage.setItem("pendo_scores", JSON.stringify(scoreHistory));
     }
     
-    // Toggle layouts
+    // Toggle application screen layouts presentation views
     document.getElementById("examArea").style.display = "none";
     document.getElementById("resultArea").style.display = "block";
     document.getElementById("scoreText").innerText = `${correctCount} out of ${examQuestions.length}`;
 }
 
+// Fire system initialization parameters workflow loop
 initializeExam();
 </script>
 

@@ -32,6 +32,7 @@ input,textarea{
 width:100%;
 padding:10px;
 margin:10px 0;
+box-sizing: border-box;
 }
 
 button{
@@ -41,6 +42,8 @@ padding:12px 20px;
 border:none;
 border-radius:5px;
 cursor:pointer;
+width: 100%;
+font-weight: bold;
 }
 
 button:hover{
@@ -48,8 +51,11 @@ background:#003d80;
 }
 
 .question{
-padding:10px;
+padding:15px;
 border-bottom:1px solid #ddd;
+background: #f9f9f9;
+margin-bottom: 10px;
+border-left: 5px solid #0056b3;
 }
 </style>
 </head>
@@ -65,79 +71,89 @@ border-bottom:1px solid #ddd;
 <h2>Add New Question</h2>
 
 <input type="text" id="question" placeholder="Question">
-
 <input type="text" id="option1" placeholder="Option A">
-
 <input type="text" id="option2" placeholder="Option B">
-
 <input type="text" id="option3" placeholder="Option C">
-
 <input type="text" id="option4" placeholder="Option D">
-
-<input type="number" id="answer" placeholder="Correct Answer (0-3)">
+<input type="number" id="answer" placeholder="Correct Answer Index (0 for A, 1 for B, 2 for C, 3 for D)" min="0" max="3">
 
 <button onclick="saveQuestion()">Save Question</button>
 
 <hr>
 
 <h2>Saved Questions</h2>
-
 <div id="list"></div>
 
 </div>
 
 <script>
-
 let questions = JSON.parse(localStorage.getItem("questions")) || [];
 
 function saveQuestion(){
+    let qText = document.getElementById("question").value.trim();
+    let opt1 = document.getElementById("option1").value.trim();
+    let opt2 = document.getElementById("option2").value.trim();
+    let opt3 = document.getElementById("option3").value.trim();
+    let opt4 = document.getElementById("option4").value.trim();
+    let ansVal = document.getElementById("answer").value;
 
-let q = {
-question:document.getElementById("question").value,
-options:[
-document.getElementById("option1").value,
-document.getElementById("option2").value,
-document.getElementById("option3").value,
-document.getElementById("option4").value
-],
-answer:Number(document.getElementById("answer").value)
-};
+    // Validation to prevent empty records or wrong numbers
+    if(!qText || !opt1 || !opt2 || !opt3 || !opt4 || ansVal === "") {
+        alert("Please fill in all fields.");
+        return;
+    }
 
-questions.push(q);
+    let ansIndex = Number(ansVal);
+    if(ansIndex < 0 || ansIndex > 3) {
+        alert("Correct Answer must be a number between 0 and 3.");
+        return;
+    }
 
-localStorage.setItem("questions",JSON.stringify(questions));
+    let q = {
+        question: qText,
+        options: [opt1, opt2, opt3, opt4],
+        answer: ansIndex
+    };
 
-alert("Question Saved");
+    questions.push(q);
+    localStorage.setItem("questions", JSON.stringify(questions));
+    alert("Question Saved Successfully!");
 
-displayQuestions();
+    // Clear the form fields for the next entry
+    document.getElementById("question").value = "";
+    document.getElementById("option1").value = "";
+    document.getElementById("option2").value = "";
+    document.getElementById("option3").value = "";
+    document.getElementById("option4").value = "";
+    document.getElementById("answer").value = "";
 
+    displayQuestions();
 }
 
 function displayQuestions(){
-
-let output="";
-
-questions.forEach((q,i)=>{
-
-output+=`
-<div class="question">
-<b>${i+1}. ${q.question}</b><br>
-A. ${q.options[0]}<br>
-B. ${q.options[1]}<br>
-C. ${q.options[2]}<br>
-D. ${q.options[3]}
-</div>
-`;
-
-});
-
-document.getElementById("list").innerHTML=output;
-
+    let output = "";
+    if(questions.length === 0) {
+        output = "<p>No questions saved yet.</p>";
+    } else {
+        questions.forEach((q, i) => {
+            output += `
+            <div class="question">
+                <b>${i+1}. ${q.question}</b><br>
+                A. ${q.options[0]} ${q.answer === 0 ? '✔️' : ''}<br>
+                B. ${q.options[1]} ${q.answer === 1 ? '✔️' : ''}<br>
+                C. ${q.options[2]} ${q.answer === 2 ? '✔️' : ''}<br>
+                D. ${q.options[3]} ${q.answer === 3 ? '✔️' : ''}
+            </div>
+            `;
+        });
+    }
+    document.getElementById("list").innerHTML = output;
 }
 
+// Initial display load
 displayQuestions();
-
 </script>
 
 </body>
   </html>
+  
